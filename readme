@@ -1,0 +1,9 @@
+This code was based off of the code released in the Phasor Field Diffraction Based Reconstruction for Fast Non-Line-of-Sight Imaging Systems paper published in nature communications 2020. 
+https://www.nature.com/articles/s41467-020-15157-4
+
+I developed the python code under the supervision of the NLOS team at the University of Wisconsin Madison. This project was done in order to translate the existing MATLAB code to python in order to reap the benefits of GPU acceleration using PyTorch in the future. 
+
+While translating this code I utilized the following python libraries: matplotlib, scipy, and numpy. 
+
+
+During this whole process I learned a lot about data manipulation and vectorization in python in order to accurately translate and optimize the MATLAB code. 
