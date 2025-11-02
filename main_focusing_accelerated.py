@@ -91,25 +91,25 @@ loadData = mat73.loadmat(fileName)
 
 # Basic parameters for wavefront cube
 c_light = 299792458 # speed of light
-aperturefullsize = np.array([loadData['aperturefullsize']])
-u_total = np.array([loadData['u_total']])
-u_total = np.squeeze(u_total)
-lambda_loop = np.squeeze(np.array([loadData['lambda_loop']]))
-omega_space = np.squeeze(np.array([loadData['omega_space']]))
-weight = np.squeeze(np.array([loadData['weight']]))
+aperturefullsize = cp.array([loadData['aperturefullsize']])
+u_total = cp.array([loadData['u_total']])
+u_total = cp.squeeze(u_total)
+lambda_loop = cp.squeeze(cp.array([loadData['lambda_loop']]))
+omega_space = cp.squeeze(cp.array([loadData['omega_space']]))
+weight = cp.squeeze(cp.array([loadData['weight']]))
 sample_spacing = aperturefullsize[0, 0]/((u_total.shape[0]) -1) # calculate smaping space on the captured wavefront
 
 # Pad Virtual Aperture Wavefront
 # additional if physical dimension is odd number
 if (((u_total.shape[1]) % 2 == 1)):
     tmp_0, tmp_x, tmp_y, tmp_z = u_total.shape
-    tmp3D = np.zeros(int(np.round(tmp_x / 2)*2), int(np.round(tmp_y / 2)),tmp_z)
-    aperturefullsize = (np.array(tmp3D.shape[:2] - 1)) * sample_spacing
+    tmp3D = cp.zeros(int(cp.round(tmp_x / 2)*2), int(cp.round(tmp_y / 2)),tmp_z)
+    aperturefullsize = (cp.array(tmp3D.shape[:2] - 1)) * sample_spacing
     tmp3D[:u_total.shape[0], :u_total.shape[1], :] = u_total
     u_total = tmp3D
 
 # preallocated memory for padding wavefront
-u_tmp = np.zeros(((2 * int(np.round(np.round(v_apt_Sz / sample_spacing) / 2))), (2 * int(np.round(np.round(v_apt_Sz / sample_spacing) / 2))), u_total.shape[2]), dtype=np.int64)
+u_tmp = cp.zeros(((2 * int(cp.round(cp.round(v_apt_Sz / sample_spacing) / 2))), (2 * int(cp.round(cp.round(v_apt_Sz / sample_spacing) / 2))), u_total.shape[2]), dtype=cp.int64)
 
 """
     Parameters input: 
@@ -149,13 +149,13 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
         delta = phyinapt[0] / (M -1)
 
         if M > N:
-            square_pad = int(np.ceil(0.5 * (M - N)))
-            u2 = np.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
-            phyoutapt = np.multiply(delta, u2.shape)
+            square_pad = int(cp.ceil(0.5 * (M - N)))
+            u2 = cp.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
+            phyoutapt = cp.multiply(delta, u2.shape)
         elif M < N:
-            square_pad = int(np.ceil(0.5 * (N - M)))
-            u2 = np.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
-            phyoutapt = np.multiply(delta, u2.shape) 
+            square_pad = int(cp.ceil(0.5 * (N - M)))
+            u2 = cp.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
+            phyoutapt = cp.multiply(delta, u2.shape)
         else:
             u2 = u1
             phyoutapt = phyinapt
@@ -177,8 +177,8 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
     else:
         uin, _ = tool_symmetry(uin, apt_in)
 
-    # Padding size difference 
-    diff = np.array(uin.shape) - np.array([M,N]) # Have to put uin.shape into array to subtract M,N from it
+    # Padding size difference
+    diff = cp.array(uin.shape) - cp.array([M,N]) # Have to put uin.shape into array to subtract M,N from it
     posL = posL + (diff /2) # update the virual point source location after symmetry
 
     # Update the symmetry aperture size
@@ -186,16 +186,16 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
 
     # Virtual aperture extented padding on the boundary
     # difference round to nearest even number easy symmetry padding
-    dM = 2 * np.ceil((M_prime - M)/2)
+    dM = 2 * cp.ceil((M_prime - M)/2)
 
     # symmetry padding on the x
     if dM > 0:
         # Using 0 boundary condition
         pad_width = int(dM/2)
-        uout = np.pad(uin, pad_width, mode='constant', constant_values=0)
+        uout = cp.pad(uin, pad_width, mode='constant', constant_values=0)
         posO = posL + (pad_width) # update the virual point source location after padding
     else:
-        uout = uin  
+        uout = uin
         posO = posL
 
     # update the virual aperture size 
@@ -239,19 +239,19 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
         z_hat = z/dx
         mul_square = lambda_val * z_hat/(M * dx)
 
-        m = np.linspace(0, M-1, M)
+        m = cp.linspace(0, M-1, M)
         m = m - M/2
-        n = np.linspace(0, N-1, N)
+        n = cp.linspace(0, N-1, N)
         n = n - N/2
 
-        g_m, g_n = np.meshgrid(m, n)
+        g_m, g_n = cp.meshgrid(m, n)
 
-        h = np.divide(np.exp(1j * 2 * np.pi * (np.square(z_hat) * np.sqrt(1 + (np.square(g_m) / np.square(z_hat) + np.square(g_n) / np.square(z_hat))) / (mul_square * M))), np.sqrt(1 + np.square(g_m) / np.square(z_hat) + np.square(g_n) / np.square(z_hat)))
+        h = cp.divide(cp.exp(1j * 2 * cp.pi * (cp.square(z_hat) * cp.sqrt(1 + (cp.square(g_m) / cp.square(z_hat) + cp.square(g_n) / cp.square(z_hat))) / (mul_square * M))), cp.sqrt(1 + cp.square(g_m) / cp.square(z_hat) + cp.square(g_n) / cp.square(z_hat)))
 
-        H = np.fft.fft2(h)
-        U1 = np.fft.fft2(u1) 
+        H = cp.fft.fft2(h)
+        U1 = cp.fft.fft2(u1)
         U2 = U1 * H
-        u2 = np.fft.ifftshift(np.fft.ifft2(U2))
+        u2 = cp.fft.ifftshift(cp.fft.ifft2(U2))
 
         return u2
 
@@ -281,15 +281,15 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
 
         sM, _ = u1.shape
 
-        N_uncertaint = (lambda_val * np.abs(depth)) / np.square(delta)
+        N_uncertaint = (lambda_val * cp.abs(depth)) / cp.square(delta)
         pad_size = (N_uncertaint - sM)/ 2
 
         if (pad_size > 0):
-            pad_size = np.round(alpha * pad_size)
+            pad_size = cp.round(alpha * pad_size)
         else:
             pad_size = 0
 
-        u2 = np.pad(u1, pad_width=pad_size, mode='constant', constant_values=0)
+        u2 = cp.pad(u1, pad_width=pad_size, mode='constant', constant_values=0)
         phyoutapt = delta * (u2.shape - 1)
         
         """
@@ -302,18 +302,18 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
 
             This program input x-y sampling interval is the same
         """
-        def tool_symmetry(u1, phyinapt):  
+        def tool_symmetry(u1, phyinapt):
             M, N = u1.shape
             delta = phyinapt[0] / (M -1)
 
             if M > N:
-                square_pad = int(np.ceil(0.5 * (M - N)))
-                u2 = np.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
-                phyoutapt = np.multiply(delta, u2.shape)
+                square_pad = int(cp.ceil(0.5 * (M - N)))
+                u2 = cp.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
+                phyoutapt = cp.multiply(delta, u2.shape)
             elif M < N:
-                square_pad = int(np.ceil(0.5 * (N - M)))
-                u2 = np.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
-                phyoutapt = np.multiply(delta, u2.shape) 
+                square_pad = int(cp.ceil(0.5 * (N - M)))
+                u2 = cp.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
+                phyoutapt = cp.multiply(delta, u2.shape)
             else:
                 u2 = u1
                 phyoutapt = phyinapt
@@ -331,7 +331,7 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
 
     match method:
         case 'RSD convolution':
-            uout = np.fliplr(propRSD_conv(u1_prime, aperturefullsize_prime, lambda_val, depth))
+            uout = cp.fliplr(propRSD_conv(u1_prime, aperturefullsize_prime, lambda_val, depth))
     
     uout = uout[pad_size:pad_size + Nd, pad_size : pad_size + Nd]
     
@@ -350,37 +350,37 @@ u_total = u_tmp
 u_total = u_total[0::2, 0::2, :] + u_total[1::2, 1::2, :]
 
 # create depth slice for the volume
-depth_loop = np.arange(depth_min, depth_max + sample_spacing, 2 * sample_spacing)
+depth_loop = cp.arange(depth_min, depth_max + sample_spacing, 2 * sample_spacing)
 
 # Reconstruction using fast RSD
 nZ = len(depth_loop)
-u_volume = np.zeros((u_total.shape[0], u_total.shape[1], nZ))
+u_volume = cp.zeros((u_total.shape[0], u_total.shape[1], nZ))
 
 print('Reconstruction ... ...')
 start_time = time.time() # Starts the time measurement
 
 for i in range(0,depth_loop.shape[0]):
     depth = depth_loop[i]
-    u_tmp = np.zeros((u_total.shape[0], u_total.shape[1]))
+    u_tmp = cp.zeros((u_total.shape[0], u_total.shape[1]))
 
     for spectrum_index in range(0, lambda_loop.size):
         u_field = u_total[:, :, spectrum_index]
         lambda_val = lambda_loop[spectrum_index]
         omega_val = omega_space[spectrum_index]
 
-        u1 = u_field * np.exp(1j * omega_val * (depth + d_offset)/c_light * np.ones(u_field.shape))
+        u1 = u_field * cp.exp(1j * omega_val * (depth + d_offset)/c_light * cp.ones(u_field.shape))
         u2_RSD_conv = Camera_Focusing(u1, aperturefullsize, lambda_val, depth, 'RSD convolution', 0)
         u_tmp = u_tmp + weight[spectrum_index] * u2_RSD_conv
-    
-    u_volume = u_volume.astype(np.complex128)
+
+    u_volume = u_volume.astype(cp.complex128)
     u_volume[:,:,i ] = u_tmp
 
 end_time = time.time() # Ends the time measurment
-mgn_volume = np.abs(u_volume) # abs is not working correctly
-img = np.max(mgn_volume, axis=2)
+mgn_volume = cp.abs(u_volume)
+img = cp.max(mgn_volume, axis=2)
 
 plt.figure()
-plt.imshow(img, cmap='hot')
+plt.imshow(cp.asnumpy(img), cmap='hot')
 plt.axis('image')
 plt.axis('off')
 plt.show()
