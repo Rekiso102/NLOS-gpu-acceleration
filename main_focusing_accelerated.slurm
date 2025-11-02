@@ -11,7 +11,6 @@
 cd $SLURM_SUBMIT_DIR
 
 module load nvidia/cuda/12.5.0
-module load python/3.11.6
 
 if [ ! -d "nlos_env" ]; then
     python3 -m venv nlos_env
