@@ -25,7 +25,7 @@ def mat_round(x):
     # Check if the number is positive
     y = (x >= 0)*1.0
     x = x +0.5*y - 0.5*(1-y)
-    x = np.array(x,np.int32)
+    x = cp.array(x,cp.int32)
     return x
 
 id = 6 # Choose from the 10 avaliable scenese to visualize image reconstruction
@@ -341,7 +341,7 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
 for index in range(u_total.shape[2]):
     tmp = u_total[:, :, index]
     u_tmp_slice, apt_tmp, _ = Create_VirtualAperture(tmp, aperturefullsize, v_apt_Sz, 0)
-    u_tmp = u_tmp.astype(np.complex128)
+    u_tmp = u_tmp.astype(cp.complex128)
     u_tmp[:, :, index] = u_tmp_slice
 aperturefullsize = apt_tmp # update virtual aperture size
 u_total = u_tmp
