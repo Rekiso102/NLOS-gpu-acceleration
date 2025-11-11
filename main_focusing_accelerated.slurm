@@ -11,15 +11,17 @@
 cd $SLURM_SUBMIT_DIR
 
 module load nvidia/cuda/12.5.0
+module load conda/miniforge
+bootstrap-conda
 
-if [ ! -d "nlos_env" ]; then
-    python3 -m venv nlos_env
-    source nlos_env/bin/activate
-    pip install --upgrade pip
-    pip install numpy scipy matplotlib mat73
-    pip install cupy-cuda12x
+# Create or activate conda environment
+if conda env list | grep -q "nlos_env"; then
+    conda activate nlos_env
 else
-    source nlos_env/bin/activate
+    conda create -n nlos_env python=3.9 -y
+    conda activate nlos_env
+    conda install numpy scipy matplotlib -y
+    conda install -c conda-forge mat73 cupy -y
 fi
 
-python3 main_focusing_accelerated.py
+python main_focusing_accelerated.py
