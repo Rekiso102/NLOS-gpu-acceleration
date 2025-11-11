@@ -16,12 +16,18 @@ bootstrap-conda
 
 # Create or activate conda environment
 if conda env list | grep -q "nlos_env"; then
+    echo "Activating existing nlos_env environment..."
     conda activate nlos_env
 else
+    echo "Creating new nlos_env environment..."
     conda create -n nlos_env python=3.9 -y
     conda activate nlos_env
+    echo "Installing core packages..."
     conda install numpy scipy matplotlib -y
+    echo "Installing additional packages..."
     conda install -c conda-forge mat73 cupy -y
 fi
+
+echo "Environment setup complete. Running Python script..."
 
 python main_focusing_accelerated.py
