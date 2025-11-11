@@ -151,11 +151,11 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
         if M > N:
             square_pad = int(cp.ceil(0.5 * (M - N)))
             u2 = cp.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
-            phyoutapt = cp.multiply(delta, u2.shape)
+            phyoutapt = cp.multiply(delta, cp.array(u2.shape))
         elif M < N:
             square_pad = int(cp.ceil(0.5 * (N - M)))
             u2 = cp.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
-            phyoutapt = cp.multiply(delta, u2.shape)
+            phyoutapt = cp.multiply(delta, cp.array(u2.shape))
         else:
             u2 = u1
             phyoutapt = phyinapt
@@ -309,11 +309,11 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
             if M > N:
                 square_pad = int(cp.ceil(0.5 * (M - N)))
                 u2 = cp.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
-                phyoutapt = cp.multiply(delta, u2.shape)
+                phyoutapt = cp.multiply(delta, cp.array(u2.shape))
             elif M < N:
                 square_pad = int(cp.ceil(0.5 * (N - M)))
                 u2 = cp.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
-                phyoutapt = cp.multiply(delta, u2.shape)
+                phyoutapt = cp.multiply(delta, cp.array(u2.shape))
             else:
                 u2 = u1
                 phyoutapt = phyinapt
