@@ -20,7 +20,7 @@ if conda env list | grep -q "nlos_env"; then
     conda activate nlos_env
 else
     echo "Creating new nlos_env environment..."
-    conda create -n nlos_env python=3.9 -y
+    conda create -n nlos_env python=3.11 -y
     conda activate nlos_env
     echo "Installing core packages..."
     conda install numpy scipy matplotlib -y
