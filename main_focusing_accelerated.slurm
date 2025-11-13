@@ -28,6 +28,12 @@ conda install numpy scipy matplotlib -y
 echo "Installing additional packages..."
 conda install -c conda-forge mat73 cupy -y
 
-echo "Environment setup complete. Running Python script..."
+echo "Environment setup complete. Running both scripts for comparison..."
 
+echo "========== ORIGINAL VERSION =========="
+python main_focusing.py
+
+echo "========== GPU ACCELERATED VERSION =========="
 python main_focusing_accelerated.py
+
+echo "========== COMPARISON COMPLETE =========="

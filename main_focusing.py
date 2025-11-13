@@ -374,6 +374,8 @@ for i in range(0,depth_loop.shape[0]):
     u_volume[:,:,i ] = u_tmp
 
 end_time = time.time() # Ends the time measurment
+print(f"Original Reconstruction Time: {end_time - start_time:.2f} seconds")
+
 mgn_volume = np.abs(u_volume) # abs is not working correctly
 img = np.max(mgn_volume, axis=2)
 
