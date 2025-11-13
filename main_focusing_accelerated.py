@@ -368,27 +368,28 @@ u_volume = cp.zeros((u_total.shape[0], u_total.shape[1], nZ), dtype=cp.complex12
 print('Reconstruction ... ...')
 start_time = time.time() # Starts the time measurement
 
-# Pre-compute phase factors for efficiency
+# Enable GPU streams for parallel processing
+cp.cuda.Device().use()
 c_light_inv = 1.0 / c_light
 
-for i in range(depth_loop.shape[0]):
-    depth = depth_loop[i]
-    u_tmp = cp.zeros((u_total.shape[0], u_total.shape[1]), dtype=cp.complex128)
+with cp.cuda.Stream():
+    for i in range(depth_loop.shape[0]):
+        depth = depth_loop[i]
+        u_tmp = cp.zeros((u_total.shape[0], u_total.shape[1]), dtype=cp.complex128)
 
-    # Vectorized computation across spectra
-    for spectrum_index in range(lambda_loop.size):
-        u_field = u_total[:, :, spectrum_index]
-        lambda_val = lambda_loop[spectrum_index]
-        omega_val = omega_space[spectrum_index]
+        # Vectorized phase calculation for all spectra
+        phase_factors = cp.exp(1j * omega_space * (depth + d_offset) * c_light_inv)
 
-        # Optimized phase calculation - scalar multiplication with broadcasting
-        phase_factor = cp.exp(1j * omega_val * (depth + d_offset) * c_light_inv)
-        u1 = u_field * phase_factor
+        for spectrum_index in range(lambda_loop.size):
+            u_field = u_total[:, :, spectrum_index]
+            lambda_val = lambda_loop[spectrum_index]
 
-        u2_RSD_conv = Camera_Focusing(u1, aperturefullsize, lambda_val, depth, 'RSD convolution', 0)
-        u_tmp += weight[spectrum_index] * u2_RSD_conv
+            u1 = u_field * phase_factors[spectrum_index]
 
-    u_volume[:, :, i] = u_tmp
+            u2_RSD_conv = Camera_Focusing(u1, aperturefullsize, lambda_val, depth, 'RSD convolution', 0)
+            u_tmp += weight[spectrum_index] * u2_RSD_conv
+
+        u_volume[:, :, i] = u_tmp
 
 end_time = time.time() # Ends the time measurment
 mgn_volume = cp.abs(u_volume)
