@@ -392,7 +392,7 @@ with cp.cuda.Stream():
         u_volume[:, :, i] = u_tmp
 
 end_time = time.time() # Ends the time measurment
-print(f"GPU Accelerated Reconstruction Time: {end_time - start_time:.2f} seconds")
+print(f"GPU Accelerated Reconstruction Time: {end_time - start_time:.2f} seconds", flush=True)
 
 mgn_volume = cp.abs(u_volume)
 img = cp.max(mgn_volume, axis=2)
