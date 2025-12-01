@@ -380,14 +380,25 @@ with cp.cuda.Stream():
         # Vectorized phase calculation for all spectra
         phase_factors = cp.exp(1j * omega_space * (depth + d_offset) * c_light_inv)
 
+        # Apply phase factors to all spectra simultaneously - vectorized multiplication
+        u_phase_corrected = u_total * phase_factors[cp.newaxis, cp.newaxis, :]
+
+        # Pre-allocate array for focusing results from all wavelengths
+        u_focused_all_wavelengths = cp.zeros_like(u_phase_corrected)
+
+        # Process each wavelength through Camera_Focusing
         for spectrum_index in range(lambda_loop.size):
-            u_field = u_total[:, :, spectrum_index]
-            lambda_val = lambda_loop[spectrum_index]
+            u_focused_all_wavelengths[:, :, spectrum_index] = Camera_Focusing(
+                u_phase_corrected[:, :, spectrum_index],
+                aperturefullsize,
+                lambda_loop[spectrum_index],
+                depth,
+                'RSD convolution',
+                0
+            )
 
-            u1 = u_field * phase_factors[spectrum_index]
-
-            u2_RSD_conv = Camera_Focusing(u1, aperturefullsize, lambda_val, depth, 'RSD convolution', 0)
-            u_tmp += weight[spectrum_index] * u2_RSD_conv
+        # Apply spectral weights and sum across all wavelengths - vectorized
+        u_tmp = cp.sum(weight[cp.newaxis, cp.newaxis, :] * u_focused_all_wavelengths, axis=2)
 
         u_volume[:, :, i] = u_tmp
 
