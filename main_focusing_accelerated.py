@@ -337,6 +337,88 @@ def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
     
     return uout
 
+def Camera_Focusing_Batch(uin_all_wavelengths, L, lambda_vals, depth, method, alpha):
+    """
+    Batch version of Camera_Focusing that processes multiple wavelengths simultaneously
+
+    Parameters:
+        uin_all_wavelengths: input wavefront for all wavelengths (M, N, num_wavelengths)
+        L: aperture size, unit meter
+        lambda_vals: array of wavelengths, unit meter (num_wavelengths,)
+        depth: propagation depth, unit meter
+        method: propagation method
+        alpha: accuracy coefficient
+
+    Returns:
+        uout_all: output wavefront for all wavelengths (M, N, num_wavelengths)
+    """
+
+    def propRSD_conv_batch(u1_all, L, lambda_vals, z):
+        """Batch RSD convolution for multiple wavelengths using batch FFT"""
+        M, N, num_wavelengths = u1_all.shape
+
+        l_1 = L[0]
+        l_2 = L[1]
+
+        dx = l_1/(M-1)
+        dy = l_2/(N-1)
+
+        z_hat = z/dx
+
+        # Pre-compute spatial grid (same for all wavelengths)
+        m = cp.linspace(0, M-1, M) - M/2
+        n = cp.linspace(0, N-1, N) - N/2
+        g_m, g_n = cp.meshgrid(m, n)
+
+        # Common spatial terms (wavelength-independent)
+        g_m_sq = cp.square(g_m)
+        g_n_sq = cp.square(g_n)
+        z_hat_sq = cp.square(z_hat)
+        sqrt_term = cp.sqrt(1 + (g_m_sq + g_n_sq) / z_hat_sq)
+
+        # Initialize output
+        u2_all = cp.zeros_like(u1_all)
+
+        # Batch FFT of input fields across all wavelengths
+        U1_all = cp.fft.fft2(u1_all, axes=(0, 1))  # FFT only over spatial dimensions
+
+        # Process transfer functions for each wavelength
+        for idx in range(num_wavelengths):
+            mul_square = lambda_vals[idx] * z_hat / (M * dx)
+
+            # Transfer function for this wavelength
+            phase_term = 2 * cp.pi * z_hat_sq * sqrt_term / (mul_square * M)
+            h = cp.divide(cp.exp(1j * phase_term), sqrt_term)
+
+            # FFT of transfer function
+            H = cp.fft.fft2(h)
+
+            # Apply transfer function in frequency domain
+            U2 = U1_all[:, :, idx] * H
+
+            # IFFT back to spatial domain
+            u2_all[:, :, idx] = cp.fft.ifftshift(cp.fft.ifft2(U2))
+
+        return u2_all
+
+    # Handle alpha=0 case (used in main reconstruction loop)
+    if alpha == 0:
+        u1_prime_all = uin_all_wavelengths
+        aperturefullsize_prime = L
+        pad_size = 0
+        Nd = u1_prime_all.shape[0]
+    else:
+        raise NotImplementedError("Batch padding for alpha != 0 not implemented")
+
+    if method == 'RSD convolution':
+        uout_all = cp.flip(propRSD_conv_batch(u1_prime_all, aperturefullsize_prime, lambda_vals, depth), axis=1)
+
+    # Crop if needed
+    if pad_size > 0:
+        uout_all = uout_all[pad_size:pad_size + Nd, pad_size:pad_size + Nd, :]
+
+    return uout_all
+
 # create Virtual Aperture by zero padding - optimized
 # Process first slice to get output dimensions
 tmp = u_total[:, :, 0]
@@ -380,25 +462,21 @@ with cp.cuda.Stream():
         # Vectorized phase calculation for all spectra
         phase_factors = cp.exp(1j * omega_space * (depth + d_offset) * c_light_inv)
 
-        # Apply phase factors to all spectra simultaneously - vectorized multiplication
-        u_phase_corrected = u_total * phase_factors[cp.newaxis, cp.newaxis, :]
+        # Apply phase corrections to all wavelengths simultaneously
+        u_phase_corrected_all = u_total * phase_factors[cp.newaxis, cp.newaxis, :]
 
-        # Pre-allocate array for focusing results from all wavelengths
-        u_focused_all_wavelengths = cp.zeros_like(u_phase_corrected)
+        # Batch process all wavelengths through Camera_Focusing
+        u2_all_wavelengths = Camera_Focusing_Batch(
+            u_phase_corrected_all,
+            aperturefullsize,
+            lambda_loop,
+            depth,
+            'RSD convolution',
+            0
+        )
 
-        # Process each wavelength through Camera_Focusing
-        for spectrum_index in range(lambda_loop.size):
-            u_focused_all_wavelengths[:, :, spectrum_index] = Camera_Focusing(
-                u_phase_corrected[:, :, spectrum_index],
-                aperturefullsize,
-                lambda_loop[spectrum_index],
-                depth,
-                'RSD convolution',
-                0
-            )
-
-        # Apply spectral weights and sum across all wavelengths - vectorized
-        u_tmp = cp.sum(weight[cp.newaxis, cp.newaxis, :] * u_focused_all_wavelengths, axis=2)
+        # Apply weights and sum across all wavelengths
+        u_tmp = cp.sum(weight[cp.newaxis, cp.newaxis, :] * u2_all_wavelengths, axis=2)
 
         u_volume[:, :, i] = u_tmp
 
