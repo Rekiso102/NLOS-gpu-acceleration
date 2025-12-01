@@ -205,9 +205,9 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
 
 """
     Parameters input: 
-        1. uin: input virtual wavefront
+        1. uin_all_wavelengths: input virtual wavefront
         2. L: aperture size, unit meter
-        3. lambda: virtual wavelength, unit meter
+        3. lambda_vals: virtual wavelength, unit meter
         4. depth: propagation (focusing) depth, unit meter
         5. method: string for choosing variety wave propagation kernel 
         6. alpha: coefficient for accuracness, ideally >= 1, 0.1 is
@@ -216,145 +216,18 @@ def Create_VirtualAperture(uin, apt_in, maxSz, posL):
     Parameters output: 
         1. uout: output wavefront at the destination plane
 """
-def Camera_Focusing(uin, L, lambda_val, depth, method, alpha):
+def Camera_Focusing_Batch(uin_all_wavelengths, L, lambda_vals, depth, method, alpha):
     """
         RSD in the convolution foramt
     
 	    assumes same x and y side lengths and uniform sampling
-        u1 - source plane field
+        u1_all - source plane field
 	    L - source and observation plane side lengths
-	    lambda - wavelength
+	    lambda_vals - wavelength
 	    z - propagation distance
 	    u2 - observation plane field
     """
-    def propRSD_conv(u1, L, lambda_val, z):
-        M, N = u1.shape
-    
-        l_1 = L[0]
-        l_2 = L[1]
-
-        dx = l_1/(M-1)
-        dy = l_2/(N-1)
-
-        z_hat = z/dx
-        mul_square = lambda_val * z_hat/(M * dx)
-
-        m = cp.linspace(0, M-1, M)
-        m = m - M/2
-        n = cp.linspace(0, N-1, N)
-        n = n - N/2
-
-        g_m, g_n = cp.meshgrid(m, n)
-
-        h = cp.divide(cp.exp(1j * 2 * cp.pi * (cp.square(z_hat) * cp.sqrt(1 + (cp.square(g_m) / cp.square(z_hat) + cp.square(g_n) / cp.square(z_hat))) / (mul_square * M))), cp.sqrt(1 + cp.square(g_m) / cp.square(z_hat) + cp.square(g_n) / cp.square(z_hat)))
-
-        H = cp.fft.fft2(h)
-        U1 = cp.fft.fft2(u1)
-        U2 = U1 * H
-        u2 = cp.fft.ifftshift(cp.fft.ifft2(U2))
-
-        return u2
-
-    """"
-        Input: 
-            u1: input complex field
-            phyinapt: Input physical aperture dimension
-            lambda : wavelength, unit m
-            depth: unit m
-            alpha: uncertainty parameter
-        Output: 
-            u2: output complex field
-            phyoutapt: Output physical aperture dimension
-            pad_size: one sided padding size
-            sM: ola square symmetry, parameter for redoing the padding
-
-        This program input x-y sampling interval is the same, this program
-        also check if input field is symmetry (square)
-    """
-    def tool_fieldzeropadding(u1, phyinapt, lambda_val, depth, alpha):
-        M, N = u1.shape
-        delta = phyinapt[0]/(M-1)
-        if (M == N):
-            pass
-        else:
-            u1, _ = tool_symmetry(u1, phyinapt)
-
-        sM, _ = u1.shape
-
-        N_uncertaint = (lambda_val * cp.abs(depth)) / cp.square(delta)
-        pad_size = (N_uncertaint - sM)/ 2
-
-        if (pad_size > 0):
-            pad_size = cp.round(alpha * pad_size)
-        else:
-            pad_size = 0
-
-        u2 = cp.pad(u1, pad_width=pad_size, mode='constant', constant_values=0)
-        phyoutapt = delta * (u2.shape - 1)
-        
-        """
-            Input: 
-                u1: input complex field
-                phyinapt: Input physical aperture dimension
-            Output: 
-                u2: output complex field
-                phyoutapt: Output physical aperture dimension
-
-            This program input x-y sampling interval is the same
-        """
-        def tool_symmetry(u1, phyinapt):
-            M, N = u1.shape
-            delta = phyinapt[0] / (M -1)
-
-            if M > N:
-                square_pad = int(cp.ceil(0.5 * (M - N)))
-                u2 = cp.pad(u1, ((0, 0), (square_pad, square_pad)), mode='constant', constant_values=0)
-                phyoutapt = cp.multiply(delta, cp.array(u2.shape))
-            elif M < N:
-                square_pad = int(cp.ceil(0.5 * (N - M)))
-                u2 = cp.pad(u1, ((square_pad, square_pad), (0, 0)), mode='constant', constant_values=0)
-                phyoutapt = cp.multiply(delta, cp.array(u2.shape))
-            else:
-                u2 = u1
-                phyoutapt = phyinapt
-
-            return u2, phyoutapt
-        return u2, phyoutapt, pad_size, sM
-
-    if (alpha != 0):
-        u1_prime, aperturefullsize_prime, pad_size, Nd = tool_fieldzeropadding(uin, L, lambda_val, depth, alpha)
-    else:
-        u1_prime = uin
-        aperturefullsize_prime = L
-        pad_size = 0
-        Nd = u1_prime.shape[0] 
-
-    match method:
-        case 'RSD convolution':
-            uout = cp.fliplr(propRSD_conv(u1_prime, aperturefullsize_prime, lambda_val, depth))
-    
-    uout = uout[pad_size:pad_size + Nd, pad_size : pad_size + Nd]
-    
-    return uout
-
-def Camera_Focusing_Batch(uin_all_wavelengths, L, lambda_vals, depth, method, alpha):
-    """
-    Batch version of Camera_Focusing that processes multiple wavelengths simultaneously
-
-    Parameters:
-        uin_all_wavelengths: input wavefront for all wavelengths (M, N, num_wavelengths)
-        L: aperture size, unit meter
-        lambda_vals: array of wavelengths, unit meter (num_wavelengths,)
-        depth: propagation depth, unit meter
-        method: propagation method
-        alpha: accuracy coefficient
-
-    Returns:
-        uout_all: output wavefront for all wavelengths (M, N, num_wavelengths)
-    """
-
     def propRSD_conv_batch(u1_all, L, lambda_vals, z):
-        """Batch RSD convolution for multiple wavelengths using batch FFT"""
         M, N, num_wavelengths = u1_all.shape
 
         l_1 = L[0]
@@ -401,14 +274,11 @@ def Camera_Focusing_Batch(uin_all_wavelengths, L, lambda_vals, depth, method, al
 
         return u2_all
 
-    # Handle alpha=0 case (used in main reconstruction loop)
-    if alpha == 0:
-        u1_prime_all = uin_all_wavelengths
-        aperturefullsize_prime = L
-        pad_size = 0
-        Nd = u1_prime_all.shape[0]
-    else:
-        raise NotImplementedError("Batch padding for alpha != 0 not implemented")
+    # This implementation assumes alpha=0 (no padding)
+    u1_prime_all = uin_all_wavelengths
+    aperturefullsize_prime = L
+    pad_size = 0
+    Nd = u1_prime_all.shape[0]
 
     if method == 'RSD convolution':
         uout_all = cp.flip(propRSD_conv_batch(u1_prime_all, aperturefullsize_prime, lambda_vals, depth), axis=1)
