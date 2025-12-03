@@ -30,6 +30,7 @@ def mat_round(x):
     return x
 
 id = int(os.environ.get('FILE_ID', 6)) # Choose from the 10 avaliable scenese to visualize image reconstruction
+print(f"Processing FILE_ID={id}")
 
 #parameters
 tag_maxdepth = 2;  #signal of interest respect to the targets, unit meter, FDH capture parameters
@@ -361,5 +362,6 @@ plt.figure()
 plt.imshow(cp.asnumpy(img), cmap='hot')
 plt.axis('image')
 plt.axis('off')
-plt.savefig('nlos_reconstruction_output.png', dpi=300, bbox_inches='tight')
-print("Image saved to nlos_reconstruction_output.png")
+output_filename = f'nlos_reconstruction_id{id}_output.png'
+plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+print(f"Image saved to {output_filename}")

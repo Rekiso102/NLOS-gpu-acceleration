@@ -14,19 +14,21 @@ module load nvidia/cuda/12.5.0
 module load conda/miniforge
 bootstrap-conda
 
-# Remove existing environment and create new one with correct Python version
-echo "Removing existing nlos_env environment if it exists..."
-conda env remove -n nlos_env -y 2>/dev/null || true
+# Check if environment exists, create only if needed
+if conda env list | grep -q "^nlos_env "; then
+    echo "Environment nlos_env already exists, activating..."
+    conda activate nlos_env
+else
+    echo "Creating new nlos_env environment with Python 3.11..."
+    conda create -n nlos_env python=3.11 -y
+    conda activate nlos_env
 
-echo "Creating new nlos_env environment with Python 3.11..."
-conda create -n nlos_env python=3.11 -y
-conda activate nlos_env
+    echo "Installing core packages..."
+    conda install numpy scipy matplotlib -y
 
-echo "Installing core packages..."
-conda install numpy scipy matplotlib -y
-
-echo "Installing additional packages..."
-conda install -c conda-forge mat73 cupy -y
+    echo "Installing additional packages..."
+    conda install -c conda-forge mat73 cupy -y
+fi
 
 echo "Environment setup complete. Processing FILE_ID=${FILE_ID}..."
 
