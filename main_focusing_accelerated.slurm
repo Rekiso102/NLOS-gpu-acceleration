@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus-per-task=1
 #SBATCH --mem-per-cpu=4G
-#SBATCH --output=nlos_reconstruction.output
-#SBATCH --error=nlos_reconstruction.error
+#SBATCH --output=nlos_reconstruction_%j_id%a.output
+#SBATCH --error=nlos_reconstruction_%j_id%a.error
 
 cd $SLURM_SUBMIT_DIR
 
@@ -28,12 +28,10 @@ conda install numpy scipy matplotlib -y
 echo "Installing additional packages..."
 conda install -c conda-forge mat73 cupy -y
 
-echo "Environment setup complete. Running both scripts for comparison..."
+echo "Environment setup complete. Processing FILE_ID=${FILE_ID}..."
 
-echo "========== ORIGINAL VERSION =========="
-python main_focusing.py
-
-echo "========== GPU ACCELERATED VERSION =========="
+echo "========== GPU ACCELERATED VERSION (FILE_ID=${FILE_ID}) =========="
+export FILE_ID=${FILE_ID}
 python main_focusing_accelerated.py
 
-echo "========== COMPARISON COMPLETE =========="
+echo "========== PROCESSING COMPLETE =========="
