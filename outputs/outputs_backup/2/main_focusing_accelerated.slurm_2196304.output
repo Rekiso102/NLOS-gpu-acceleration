@@ -1,0 +1,9 @@
+Environment nlos_env3 already exists, activating...
+Environment setup complete. Processing FILE_ID=2...
+========== GPU ACCELERATED VERSION (FILE_ID=2) ==========
+Processing FILE_ID=2
+./input/resolutionbar_1.5.mat
+Reconstruction ... ...
+GPU Accelerated Reconstruction Time: 0.67 seconds
+Image saved to outputs/2/nlos_reconstruction_id2_output.png
+========== PROCESSING COMPLETE ==========

@@ -1,0 +1,6 @@
+Environment nlos_env3 already exists, activating...
+Environment setup complete. Processing FILE_ID=7...
+========== GPU ACCELERATED VERSION (FILE_ID=7) ==========
+Processing FILE_ID=7
+./input/officescene_corrected_1ms_3.mat
+========== PROCESSING COMPLETE ==========
