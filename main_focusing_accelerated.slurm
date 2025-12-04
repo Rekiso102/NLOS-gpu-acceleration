@@ -10,6 +10,9 @@
 
 cd $SLURM_SUBMIT_DIR
 
+# Save FILE_ID before conda activation (conda can clear environment variables)
+SAVED_FILE_ID=${FILE_ID}
+
 module load nvidia/cuda/12.5.0
 module load conda/miniforge
 bootstrap-conda
@@ -30,10 +33,12 @@ else
     conda install -c conda-forge mat73 cupy -y
 fi
 
+# Restore FILE_ID after conda activation
+export FILE_ID=${SAVED_FILE_ID}
+
 echo "Environment setup complete. Processing FILE_ID=${FILE_ID}..."
 
 echo "========== GPU ACCELERATED VERSION (FILE_ID=${FILE_ID}) =========="
-export FILE_ID=${FILE_ID}
 python main_focusing_accelerated.py
 
 echo "========== PROCESSING COMPLETE =========="
