@@ -18,13 +18,13 @@ module load conda/miniforge
 bootstrap-conda
 
 # Check if environment exists, create only if needed
-if conda env list | grep -q "^nlos_env "; then
-    echo "Environment nlos_env already exists, activating..."
-    conda activate nlos_env
+if conda env list | grep -q "^nlos_env2 "; then
+    echo "Environment nlos_env2 already exists, activating..."
+    conda activate nlos_env2
 else
-    echo "Creating new nlos_env environment with Python 3.11..."
-    conda create -n nlos_env python=3.11 -y
-    conda activate nlos_env
+    echo "Creating new nlos_env2 environment with Python 3.11..."
+    conda create -n nlos_env2 python=3.11 -y
+    conda activate nlos_env2
 
     echo "Installing core packages..."
     conda install numpy scipy matplotlib -y
