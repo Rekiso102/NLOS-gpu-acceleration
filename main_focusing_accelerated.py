@@ -362,6 +362,6 @@ plt.figure()
 plt.imshow(cp.asnumpy(img), cmap='hot')
 plt.axis('image')
 plt.axis('off')
-output_filename = f'nlos_reconstruction_id{id}_output.png'
+output_filename = f'outputs/{id}/nlos_reconstruction_id{id}_output.png'
 plt.savefig(output_filename, dpi=300, bbox_inches='tight')
 print(f"Image saved to {output_filename}")

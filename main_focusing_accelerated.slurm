@@ -5,13 +5,16 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus-per-task=1
 #SBATCH --mem-per-cpu=4G
-#SBATCH --output=nlos_reconstruction_%j_id%a.output
-#SBATCH --error=nlos_reconstruction_%j_id%a.error
+#SBATCH --output=outputs/%x_%j.output
+#SBATCH --error=outputs/%x_%j.error
 
 cd $SLURM_SUBMIT_DIR
 
 # Save FILE_ID before conda activation (conda can clear environment variables)
 SAVED_FILE_ID=${FILE_ID}
+
+# Create base outputs directory and FILE_ID subdirectory
+mkdir -p outputs/${FILE_ID}
 
 module load nvidia/cuda/12.5.0
 module load conda/miniforge
@@ -42,3 +45,7 @@ echo "========== GPU ACCELERATED VERSION (FILE_ID=${FILE_ID}) =========="
 python main_focusing_accelerated.py
 
 echo "========== PROCESSING COMPLETE =========="
+
+# Move output and error logs to FILE_ID subdirectory
+mv outputs/main_focusing_accelerated.slurm_${SLURM_JOB_ID}.output outputs/${FILE_ID}/ 2>/dev/null || true
+mv outputs/main_focusing_accelerated.slurm_${SLURM_JOB_ID}.error outputs/${FILE_ID}/ 2>/dev/null || true
