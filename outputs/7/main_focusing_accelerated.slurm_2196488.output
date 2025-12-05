@@ -3,4 +3,7 @@ Environment setup complete. Processing FILE_ID=7...
 ========== GPU ACCELERATED VERSION (FILE_ID=7) ==========
 Processing FILE_ID=7
 ./input/officescene_corrected_1ms_3.mat
+Reconstruction ... ...
+GPU Accelerated Reconstruction Time: 4.79 seconds
+Image saved to outputs/7/nlos_reconstruction_id7_output.png
 ========== PROCESSING COMPLETE ==========
