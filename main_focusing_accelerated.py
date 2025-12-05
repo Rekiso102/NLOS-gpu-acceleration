@@ -310,6 +310,12 @@ for index in range(1, u_total.shape[2]):
 aperturefullsize = apt_tmp # update virtual aperture size
 u_total = u_tmp
 
+# Ensure even dimensions for downsampling (crop if odd)
+if u_total.shape[0] % 2 == 1:
+    u_total = u_total[:-1, :, :]
+if u_total.shape[1] % 2 == 1:
+    u_total = u_total[:, :-1, :]
+
 # Spatial downsampling by bounded resolution
 u_total = u_total[0::2, 0::2, :] + u_total[1::2, 1::2, :]
 
