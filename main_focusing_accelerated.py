@@ -104,9 +104,13 @@ sample_spacing = aperturefullsize[0, 0]/((u_total.shape[0]) -1) # calculate smap
 # Pad Virtual Aperture Wavefront
 # additional if physical dimension is odd number
 if (((u_total.shape[1]) % 2 == 1)):
-    tmp_0, tmp_x, tmp_y, tmp_z = u_total.shape
-    tmp3D = cp.zeros(int(cp.round(tmp_x / 2)*2), int(cp.round(tmp_y / 2)),tmp_z)
-    aperturefullsize = (cp.array(tmp3D.shape[:2] - 1)) * sample_spacing
+    # Handle both 3D and 4D data
+    if len(u_total.shape) == 4:
+        tmp_0, tmp_x, tmp_y, tmp_z = u_total.shape
+    else:  # 3D data
+        tmp_x, tmp_y, tmp_z = u_total.shape
+    tmp3D = cp.zeros((int(cp.round(tmp_x / 2)*2), int(cp.round(tmp_y / 2)), tmp_z))
+    aperturefullsize = (cp.array(tmp3D.shape[:2]) - 1) * sample_spacing
     tmp3D[:u_total.shape[0], :u_total.shape[1], :] = u_total
     u_total = tmp3D
 
