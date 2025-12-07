@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 #SBATCH --partition=instruction
-#SBATCH --time=02:00:00
+#SBATCH --time=01:30:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gpus-per-task=1
@@ -28,52 +28,20 @@ conda install numpy scipy matplotlib -y
 echo "Installing additional packages..."
 conda install -c conda-forge mat73 cupy -y
 
-echo "Environment setup complete."
-
-# Create results summary file
-echo "Scene_ID,Original_Time_Seconds,Accelerated_Time_Seconds,Speedup" > speedup_results.csv
-
-echo "========== RUNNING RECONSTRUCTION FOR ALL 10 SCENE IDs =========="
+echo "Environment setup complete. Running both scripts for all IDs..."
 
 # Loop through all 10 scene IDs
 for id in {1..10}; do
     echo ""
-    echo "==================== SCENE ID: $id ===================="
+    echo "========== SCENE ID $id =========="
 
-    echo "Running original version for scene $id..."
-    original_output=$(python main_focusing.py $id 2>&1)
-    original_time=$(echo "$original_output" | grep "Original Reconstruction Time:" | sed 's/.*: \([0-9.]*\) seconds.*/\1/')
+    echo "Running original version..."
+    python main_focusing.py $id
 
-    echo "Running GPU accelerated version for scene $id..."
-    accelerated_output=$(python main_focusing_accelerated.py $id 2>&1)
-    accelerated_time=$(echo "$accelerated_output" | grep "GPU Accelerated Reconstruction Time:" | sed 's/.*: \([0-9.]*\) seconds.*/\1/')
+    echo "Running GPU accelerated version..."
+    python main_focusing_accelerated.py $id
 
-    # Calculate speedup
-    if [[ -n "$original_time" && -n "$accelerated_time" && "$accelerated_time" != "0" ]]; then
-        speedup=$(echo "scale=2; $original_time / $accelerated_time" | bc -l)
-        echo "Scene $id: Original=${original_time}s, Accelerated=${accelerated_time}s, Speedup=${speedup}x"
-        echo "$id,$original_time,$accelerated_time,$speedup" >> speedup_results.csv
-    else
-        echo "Scene $id: Error extracting timing data"
-        echo "$id,ERROR,ERROR,ERROR" >> speedup_results.csv
-    fi
-
-    # Print the actual output for verification
-    echo "Original output:"
-    echo "$original_output"
-    echo "Accelerated output:"
-    echo "$accelerated_output"
-    echo ""
+    echo "Scene $id complete."
 done
-
-echo "========== SUMMARY =========="
-echo "Results saved to speedup_results.csv"
-cat speedup_results.csv
-
-# Calculate average speedup
-echo ""
-echo "Calculating average speedup..."
-average_speedup=$(awk -F',' 'NR>1 && $4!="ERROR" {sum+=$4; count++} END {if(count>0) print sum/count; else print "N/A"}' speedup_results.csv)
-echo "Average speedup across all scenes: ${average_speedup}x"
 
 echo "========== ALL RECONSTRUCTIONS COMPLETE =========="
