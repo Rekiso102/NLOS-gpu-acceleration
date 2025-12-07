@@ -19,6 +19,7 @@ from scipy.ndimage import zoom
 import matplotlib.pyplot as plt
 import mat73
 import time
+import sys
 
 # Defined rounding function to replicate MATLAB rounding
 def mat_round(x):
@@ -28,7 +29,8 @@ def mat_round(x):
     x = cp.array(x,cp.int32)
     return x
 
-id = 6 # Choose from the 10 avaliable scenese to visualize image reconstruction
+# Accept scene ID from command line argument, default to 6
+id = int(sys.argv[1]) if len(sys.argv) > 1 else 6
 
 #parameters
 tag_maxdepth = 2;  #signal of interest respect to the targets, unit meter, FDH capture parameters
@@ -360,5 +362,5 @@ plt.figure()
 plt.imshow(cp.asnumpy(img), cmap='hot')
 plt.axis('image')
 plt.axis('off')
-plt.savefig('nlos_reconstruction_output.png', dpi=300, bbox_inches='tight')
-print("Image saved to nlos_reconstruction_output.png")
+plt.savefig(f'nlos_reconstruction_accelerated_id{id}.png', dpi=300, bbox_inches='tight')
+print(f"Image saved to nlos_reconstruction_accelerated_id{id}.png")
